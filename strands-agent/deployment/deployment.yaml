@@ -1,0 +1,53 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: strands-agent-sa
+  namespace: default
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/agent-core-poc-strands-agent-role"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strands-agent
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: strands-agent
+  template:
+    metadata:
+      labels:
+        app: strands-agent
+    spec:
+      serviceAccountName: strands-agent-sa
+      containers:
+      - name: agent
+        image: strands-agent:latest
+        imagePullPolicy: IfNotPresent
+        env:
+        - name: AWS_REGION
+          value: "us-east-1"
+        - name: AGENT_MEMORY_KB_ID
+          valueFrom:
+            secretKeyRef:
+              name: agent-core-outputs
+              key: agent_memory_kb_id
+        - name: CODE_INTERPRETER_ID
+          valueFrom:
+            secretKeyRef:
+              name: agent-core-outputs
+              key: code_interpreter_id
+        - name: BROWSER_ID
+          valueFrom:
+            secretKeyRef:
+              name: agent-core-outputs
+              key: browser_id
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"

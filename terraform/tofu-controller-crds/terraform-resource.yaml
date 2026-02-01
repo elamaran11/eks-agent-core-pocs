@@ -1,0 +1,43 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-core-infra
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: GitRepository
+metadata:
+  name: agent-core-terraform
+  namespace: agent-core-infra
+spec:
+  interval: 1m
+  url: https://github.com/elamaran11/eks-agent-core-pocs
+  ref:
+    branch: main
+  secretRef:
+    name: git-credentials
+---
+apiVersion: infra.contrib.fluxcd.io/v1alpha2
+kind: Terraform
+metadata:
+  name: agent-core-components
+  namespace: agent-core-infra
+spec:
+  interval: 10m
+  path: ./terraform/agent-core-components
+  sourceRef:
+    kind: GitRepository
+    name: agent-core-terraform
+  vars:
+    - name: aws_region
+      value: us-east-1
+    - name: project_name
+      value: agent-core-poc
+    - name: eks_oidc_provider
+      value: oidc.eks.us-east-1.amazonaws.com/id/652A47046A6D0FA5C9071665DDF5C723
+    - name: network_mode
+      value: INTERNET
+  serviceAccountName: tf-controller
+  writeOutputsToSecret:
+    name: agent-core-outputs
+  destroyResourcesOnDeletion: false
+  approvePlan: auto

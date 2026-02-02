@@ -13,8 +13,6 @@ spec:
   url: https://github.com/elamaran11/eks-agent-core-pocs
   ref:
     branch: main
-  secretRef:
-    name: git-credentials
 ---
 apiVersion: infra.contrib.fluxcd.io/v1alpha2
 kind: Terraform

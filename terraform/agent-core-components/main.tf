@@ -28,6 +28,21 @@ resource "aws_bedrockagent_knowledge_base" "agent_memory" {
   }
 }
 
+resource "aws_iam_role" "agent_memory_role" {
+  name = "${var.project_name}-agent-memory-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Action = "sts:AssumeRole"
+      Effect = "Allow"
+      Principal = {
+        Service = "bedrock.amazonaws.com"
+      }
+    }]
+  })
+}
+
 resource "aws_opensearchserverless_security_policy" "encryption_policy" {
   name = "${var.project_name}-encryption-policy"
   type = "encryption"
@@ -63,23 +78,9 @@ resource "aws_opensearchserverless_collection" "memory_collection" {
   type = "VECTORSEARCH"
   depends_on = [
     aws_opensearchserverless_security_policy.encryption_policy,
-    aws_opensearchserverless_access_policy.data_policy
+    aws_opensearchserverless_access_policy.data_policy,
+    aws_iam_role.agent_memory_role
   ]
-}
-
-resource "aws_iam_role" "agent_memory_role" {
-  name = "${var.project_name}-agent-memory-role"
-
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Action = "sts:AssumeRole"
-      Effect = "Allow"
-      Principal = {
-        Service = "bedrock.amazonaws.com"
-      }
-    }]
-  })
 }
 
 resource "aws_iam_role_policy" "agent_memory_policy" {

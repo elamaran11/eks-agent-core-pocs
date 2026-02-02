@@ -28,12 +28,6 @@ resource "aws_bedrockagent_knowledge_base" "agent_memory" {
   }
 }
 
-resource "aws_opensearchserverless_collection" "memory_collection" {
-  name = "${var.project_name}-memory-collection"
-  type = "VECTORSEARCH"
-  depends_on = [aws_opensearchserverless_security_policy.encryption_policy]
-}
-
 resource "aws_opensearchserverless_security_policy" "encryption_policy" {
   name = "${var.project_name}-encryption-policy"
   type = "encryption"
@@ -44,6 +38,12 @@ resource "aws_opensearchserverless_security_policy" "encryption_policy" {
     }]
     AWSOwnedKey = true
   })
+}
+
+resource "aws_opensearchserverless_collection" "memory_collection" {
+  name = "${var.project_name}-memory-collection"
+  type = "VECTORSEARCH"
+  depends_on = [aws_opensearchserverless_security_policy.encryption_policy]
 }
 
 resource "aws_iam_role" "agent_memory_role" {

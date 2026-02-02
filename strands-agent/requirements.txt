@@ -1,7 +1,7 @@
-strands-sdk
-strands-tools
-bedrock-agentcore
-browser-use
-langchain-aws
+strands-agents
+strands-agents-tools
 boto3
+bedrock-agentcore
+browser-use==0.3.2
+langchain-aws>=0.1.0
 rich

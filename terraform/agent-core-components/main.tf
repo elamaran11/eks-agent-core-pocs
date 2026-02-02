@@ -75,7 +75,7 @@ resource "aws_iam_role" "strands_agent_role" {
       }
       Condition = {
         StringEquals = {
-          "${var.eks_oidc_provider}:sub" = "system:serviceaccount:default:strands-agent-sa"
+          "${var.eks_oidc_provider}:sub" = "system:serviceaccount:agent-core-infra:strands-agent-sa"
           "${var.eks_oidc_provider}:aud" = "sts.amazonaws.com"
         }
       }

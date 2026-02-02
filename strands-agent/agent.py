@@ -218,4 +218,11 @@ async def async_main(query=None):
         return {"status": "error", "error": str(e)}
 
 if __name__ == "__main__":
-    asyncio.run(async_main())
+    console.print("🚀 Strands Agent Running on EKS")
+    console.print("Waiting for requests...")
+    console.print("Press Ctrl+C to exit")
+    
+    # Keep container running
+    import time
+    while True:
+        time.sleep(3600)

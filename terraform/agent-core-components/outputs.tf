@@ -1,31 +1,26 @@
-output "agent_memory_kb_id" {
-  description = "Agent Core Memory Knowledge Base ID"
-  value       = aws_bedrockagent_knowledge_base.agent_memory.id
-}
-
-output "agent_memory_kb_arn" {
-  description = "Agent Core Memory Knowledge Base ARN"
-  value       = aws_bedrockagent_knowledge_base.agent_memory.arn
-}
-
-output "code_interpreter_arn" {
-  description = "Code Interpreter ARN"
-  value       = aws_bedrockagentcore_code_interpreter.code_interpreter.code_interpreter_arn
-}
-
-output "code_interpreter_id" {
-  description = "Code Interpreter ID"
-  value       = aws_bedrockagentcore_code_interpreter.code_interpreter.code_interpreter_id
-}
-
-output "browser_arn" {
-  description = "Browser ARN"
-  value       = aws_bedrockagentcore_browser.browser.browser_arn
+output "memory_id" {
+  description = "Memory ID"
+  value       = var.enable_memory ? module.memory[0].memory_id : null
 }
 
 output "browser_id" {
   description = "Browser ID"
-  value       = aws_bedrockagentcore_browser.browser.browser_id
+  value       = var.enable_browser ? module.browser[0].browser_id : null
+}
+
+output "browser_arn" {
+  description = "Browser ARN"
+  value       = var.enable_browser ? module.browser[0].browser_arn : null
+}
+
+output "code_interpreter_id" {
+  description = "Code Interpreter ID"
+  value       = var.enable_code_interpreter ? module.code_interpreter[0].code_interpreter_id : null
+}
+
+output "code_interpreter_arn" {
+  description = "Code Interpreter ARN"
+  value       = var.enable_code_interpreter ? module.code_interpreter[0].code_interpreter_arn : null
 }
 
 output "strands_agent_role_arn" {

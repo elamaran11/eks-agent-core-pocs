@@ -40,10 +40,31 @@ resource "aws_opensearchserverless_security_policy" "encryption_policy" {
   })
 }
 
+resource "aws_opensearchserverless_access_policy" "data_policy" {
+  name = "${var.project_name}-data-policy"
+  type = "data"
+  policy = jsonencode([{
+    Rules = [{
+      ResourceType = "collection"
+      Resource     = ["collection/${var.project_name}-memory-collection"]
+      Permission   = ["aoss:*"]
+    },
+    {
+      ResourceType = "index"
+      Resource     = ["index/${var.project_name}-memory-collection/*"]
+      Permission   = ["aoss:*"]
+    }]
+    Principal = [aws_iam_role.agent_memory_role.arn]
+  }])
+}
+
 resource "aws_opensearchserverless_collection" "memory_collection" {
   name = "${var.project_name}-memory-collection"
   type = "VECTORSEARCH"
-  depends_on = [aws_opensearchserverless_security_policy.encryption_policy]
+  depends_on = [
+    aws_opensearchserverless_security_policy.encryption_policy,
+    aws_opensearchserverless_access_policy.data_policy
+  ]
 }
 
 resource "aws_iam_role" "agent_memory_role" {

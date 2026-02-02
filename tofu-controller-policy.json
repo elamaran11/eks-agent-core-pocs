@@ -6,6 +6,7 @@
       "Action": [
         "bedrock:*",
         "bedrock-agentcore:*",
+        "s3:*",
         "iam:CreateRole",
         "iam:DeleteRole",
         "iam:GetRole",

@@ -68,17 +68,14 @@ resource "aws_iam_role" "strands_agent_role" {
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Action = "sts:AssumeRole"
       Effect = "Allow"
       Principal = {
-        Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${var.eks_oidc_provider}"
+        Service = "pods.eks.amazonaws.com"
       }
-      Condition = {
-        StringEquals = {
-          "${var.eks_oidc_provider}:sub" = "system:serviceaccount:agent-core-infra:strands-agent-sa"
-          "${var.eks_oidc_provider}:aud" = "sts.amazonaws.com"
-        }
-      }
+      Action = [
+        "sts:AssumeRole",
+        "sts:TagSession"
+      ]
     }]
   })
 }

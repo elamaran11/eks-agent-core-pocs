@@ -29,7 +29,7 @@ spec:
     - name: aws_region
       value: us-east-1
     - name: project_name
-      value: ekspoc-v2
+      value: ekspoc-v3
     - name: eks_oidc_provider
       value: oidc.eks.us-east-1.amazonaws.com/id/652A47046A6D0FA5C9071665DDF5C723
     - name: network_mode

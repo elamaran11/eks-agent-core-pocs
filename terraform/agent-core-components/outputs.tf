@@ -27,3 +27,8 @@ output "strands_agent_role_arn" {
   description = "IAM Role ARN for Strands Agent"
   value       = aws_iam_role.strands_agent_role.arn
 }
+
+output "results_bucket_name" {
+  description = "S3 bucket name for results"
+  value       = aws_s3_bucket.results.id
+}

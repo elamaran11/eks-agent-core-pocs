@@ -5,6 +5,7 @@
       "Effect": "Allow",
       "Action": [
         "bedrock:*",
+        "bedrock-agentcore:*",
         "iam:CreateRole",
         "iam:DeleteRole",
         "iam:GetRole",
@@ -16,6 +17,7 @@
         "iam:GetRolePolicy",
         "iam:ListAttachedRolePolicies",
         "iam:ListRolePolicies",
+        "iam:UpdateAssumeRolePolicy",
         "aoss:*",
         "ec2:DescribeVpcs",
         "ec2:DescribeSubnets",

@@ -83,6 +83,26 @@ resource "aws_iam_role" "strands_agent_role" {
   })
 }
 
+# ============================================================================
+# S3 Bucket for Results
+# ============================================================================
+
+resource "aws_s3_bucket" "results" {
+  bucket = "${var.project_name}-weather-results"
+
+  tags = {
+    Name    = "${var.project_name}-weather-results"
+    Project = var.project_name
+  }
+}
+
+resource "aws_s3_bucket_versioning" "results" {
+  bucket = aws_s3_bucket.results.id
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
 resource "aws_iam_role_policy" "strands_agent_policy" {
   role = aws_iam_role.strands_agent_role.id
 
@@ -104,6 +124,18 @@ resource "aws_iam_role_policy" "strands_agent_policy" {
           "bedrock:InvokeModel"
         ]
         Resource = "arn:aws:bedrock:${var.aws_region}::foundation-model/*"
+      },
+      {
+        Effect = "Allow"
+        Action = [
+          "s3:PutObject",
+          "s3:GetObject",
+          "s3:ListBucket"
+        ]
+        Resource = [
+          aws_s3_bucket.results.arn,
+          "${aws_s3_bucket.results.arn}/*"
+        ]
       }
     ]
   })

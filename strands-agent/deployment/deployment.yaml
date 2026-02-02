@@ -37,12 +37,13 @@ spec:
               name: agent-core-outputs
               key: memory_id
         - name: RESULTS_BUCKET
-          value: "weather-results-bucket"
+          valueFrom:
+            secretKeyRef:
+              name: agent-core-outputs
+              key: results_bucket_name
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: strands-agent-sa
   namespace: agent-core-infra
-  annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::940019131157:role/ekspoc-v3-strands-agent-role"

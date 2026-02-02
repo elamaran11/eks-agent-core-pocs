@@ -15,9 +15,10 @@ variable "network_mode" {
   default     = "PUBLIC"
 }
 
-variable "eks_oidc_provider" {
-  description = "EKS OIDC provider for IRSA"
+variable "eks_cluster_name" {
+  description = "EKS cluster name to fetch OIDC provider"
   type        = string
+  default     = "dev"
 }
 
 variable "enable_memory" {

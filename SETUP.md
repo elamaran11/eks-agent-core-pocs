@@ -2,11 +2,80 @@
 
 ## Prerequisites
 
-- EKS cluster (v1.28+) with Pod Identity addon installed
-- kubectl configured for your cluster
-- AWS CLI configured
-- Terraform/OpenTofu
-- FluxCD or ArgoCD for GitOps
+### AWS Account Requirements
+- AWS Account with admin access
+- AWS CLI v2.x installed and configured
+- Account ID: Note your 12-digit AWS account ID
+
+### EKS Cluster Requirements
+- **EKS Cluster**: v1.28 or higher
+- **Region**: us-east-1 (or update variables accordingly)
+- **Node Group**: x86_64 architecture (amd64)
+- **OIDC Provider**: Must be associated with the cluster
+- **Pod Identity Addon**: eks-pod-identity-agent installed
+
+### Local Tools Required
+- `kubectl` v1.28+ configured for your cluster
+- `aws` CLI v2.x
+- `podman` or `docker` for building images
+- `git` for cloning the repository
+- `eksctl` (optional, for easier OIDC setup)
+
+### AWS Services Access
+- **Amazon Bedrock**: Access to Claude models in us-east-1 and us-east-2
+- **Bedrock Agent Core**: Enabled in your account
+- **ECR**: Repository access for container images
+- **S3**: Ability to create buckets
+
+### GitOps Tool (Choose One)
+- **FluxCD** v2.x (recommended) OR
+- **ArgoCD** v2.x
+- Tofu Controller (tf-controller) installed
+
+## Quick Start - Create EKS Cluster
+
+If you don't have an EKS cluster, create one:
+
+```bash
+# Using eksctl (easiest)
+exsctl create cluster \
+  --name dev \
+  --region us-east-1 \
+  --version 1.28 \
+  --nodegroup-name standard-workers \
+  --node-type t3.large \
+  --nodes 2 \
+  --nodes-min 1 \
+  --nodes-max 3 \
+  --managed \
+  --with-oidc
+
+# Install Pod Identity addon
+aws eks create-addon \
+  --cluster-name dev \
+  --addon-name eks-pod-identity-agent \
+  --region us-east-1
+```
+
+## Verify Prerequisites
+
+```bash
+# Check kubectl access
+kubectl get nodes
+
+# Check OIDC provider
+aws eks describe-cluster --name dev --region us-east-1 \
+  --query 'cluster.identity.oidc.issuer' --output text
+
+# Check Pod Identity addon
+aws eks describe-addon \
+  --cluster-name dev \
+  --addon-name eks-pod-identity-agent \
+  --region us-east-1
+
+# Check Bedrock access
+aws bedrock list-foundation-models --region us-east-1 | grep claude
+```
 
 ## IAM Policies Required
 

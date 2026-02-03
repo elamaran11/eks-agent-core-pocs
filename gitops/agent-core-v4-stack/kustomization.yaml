@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+# Wave 0: Terraform resources (provisions AWS infrastructure)
+- ../../terraform/tofu-controller-crds-v4/terraform-resource.yaml
+
+# Wave 1: Agent deployment (uses outputs from Terraform)
+- ../../strands-agent/deployment-v4/deployment.yaml

@@ -1,0 +1,13 @@
+# Agent Core Capabilities Configuration
+# Set to true/false to enable/disable each capability
+
+agentCore:
+  memory: true
+  browser: true
+  codeInterpreter: true
+
+project:
+  name: ekspoc-v4
+  region: us-east-1
+  cluster: dev
+  networkMode: INTERNET_ACCESSIBLE

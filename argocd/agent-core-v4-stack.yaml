@@ -1,0 +1,30 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agent-core-v4-stack
+  namespace: argocd
+spec:
+  project: default
+  
+  source:
+    repoURL: https://github.com/elamaran11/eks-agent-core-pocs
+    targetRevision: main
+    path: gitops/agent-core-v4-stack
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agent-core-infra
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

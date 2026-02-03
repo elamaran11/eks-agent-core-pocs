@@ -25,15 +25,15 @@ MEMORY_ID = os.getenv('MEMORY_ID')
 RESULTS_BUCKET = os.getenv('RESULTS_BUCKET', 'weather-results-bucket')
 AWS_REGION = os.getenv('AWS_REGION', 'us-east-1')
 
-# Validate required environment variables
-required_vars = {
-    'BROWSER_ID': BROWSER_ID,
-    'CODE_INTERPRETER_ID': CODE_INTERPRETER_ID,
-    'MEMORY_ID': MEMORY_ID
-}
-missing = [k for k, v in required_vars.items() if not v]
-if missing:
-    raise EnvironmentError(f"Required environment variables not set: {', '.join(missing)}")
+# Check which capabilities are enabled
+HAS_BROWSER = bool(BROWSER_ID)
+HAS_CODE_INTERPRETER = bool(CODE_INTERPRETER_ID)
+HAS_MEMORY = bool(MEMORY_ID)
+
+console.print(f"[cyan]🔧 Enabled Capabilities:[/cyan]")
+console.print(f"  Browser: {'✅' if HAS_BROWSER else '❌'}")
+console.print(f"  Code Interpreter: {'✅' if HAS_CODE_INTERPRETER else '❌'}")
+console.print(f"  Memory: {'✅' if HAS_MEMORY else '❌'}")
 
 async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
     """Run a browser automation task"""
@@ -83,6 +83,9 @@ async def initialize_browser_session():
 @tool
 async def get_weather_data(city: str) -> Dict[str, Any]:
     """Get weather data for a city using browser automation"""
+    if not HAS_BROWSER:
+        return {"status": "error", "content": [{"text": "Browser capability not enabled"}]}
+    
     browser_session = None
     
     try:
@@ -138,6 +141,9 @@ def generate_analysis_code(weather_data: str) -> Dict[str, Any]:
 @tool
 def execute_code(python_code: str) -> Dict[str, Any]:
     """Execute Python code using AgentCore Code Interpreter"""
+    if not HAS_CODE_INTERPRETER:
+        return {"status": "error", "content": [{"text": "Code Interpreter capability not enabled"}]}
+    
     try:
         code_client = CodeInterpreter(AWS_REGION)
         code_client.start(identifier=CODE_INTERPRETER_ID)
@@ -162,6 +168,9 @@ def execute_code(python_code: str) -> Dict[str, Any]:
 @tool
 def get_activity_preferences() -> Dict[str, Any]:
     """Get activity preferences from memory"""
+    if not HAS_MEMORY:
+        return {"status": "success", "content": [{"text": "Memory capability not enabled. Using default preferences."}]}
+    
     try:
         client = MemoryClient(region_name=AWS_REGION)
         response = client.list_events(

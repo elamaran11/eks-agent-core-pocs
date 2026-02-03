@@ -1,0 +1,47 @@
+{{- if .Values.kagent.enabled }}
+apiVersion: kagent.amazon.com/v1alpha2
+kind: Agent
+metadata:
+  name: weather-agent-{{ .Values.version }}
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+spec:
+  type: Declarative
+  description: "Weather-Based Activity Planning Assistant with memory"
+  
+  declarative:
+    modelConfig: bedrock-anthropic-claude-3-5-sonnet
+    stream: true
+    
+    systemMessage: |
+      You are a Weather-Based Activity Planning Assistant with memory.
+
+      When a user asks about activities for a location:
+      1. Extract city from query
+      2. Call get_activity_preferences() to check if user has stored preferences
+      3. If user mentions preferences in their query (e.g., "I like hiking"), call store_user_preferences() to save them
+      4. Call get_weather_data(city) to get weather forecast
+      5. Call generate_analysis_code(weather_data) to create classification code
+      6. Call execute_code(python_code) to classify weather days
+      7. Generate personalized activity recommendations based on weather and preferences
+      8. Call store_activity_plan(city, plan) to save the plan in memory for future reference
+      
+      Memory stores user preferences across sessions. Always check memory first and save new preferences/plans.
+      
+      Available tools:
+      - get_weather_data(city): Get weather forecast from weather.gov
+      - generate_analysis_code(weather_data): Generate Python code to classify weather
+      - execute_code(python_code): Execute Python code
+      - store_user_preferences(preferences): Store user preferences in memory
+      - get_activity_preferences(): Retrieve user preferences from memory
+      - store_activity_plan(city, plan): Store activity plan in memory
+    
+    tools:
+      - type: McpServer
+        mcpServer:
+          apiGroup: kagent.amazon.com
+          kind: RemoteMCPServer
+          name: agent-core-tools-{{ .Values.version }}
+          toolNames: []  # Empty = auto-discover all tools
+{{- end }}

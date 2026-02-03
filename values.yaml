@@ -1,8 +1,8 @@
 # Agent Core Deployment Configuration
 # Change these values to deploy different versions (v4, v5, v6, etc.)
 
-version: v4
-projectName: ekspoc-v4
+version: v5
+projectName: ekspoc-v5
 
 # AWS Configuration
 awsRegion: us-east-1

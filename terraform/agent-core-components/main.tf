@@ -160,6 +160,6 @@ resource "aws_iam_role_policy" "strands_agent_policy" {
 resource "aws_eks_pod_identity_association" "strands_agent" {
   cluster_name    = var.eks_cluster_name
   namespace       = "agent-core-infra"
-  service_account = "strands-agent-sa-v4"
+  service_account = "strands-agent-sa-${replace(var.project_name, "ekspoc-", "")}"
   role_arn        = aws_iam_role.strands_agent_role.arn
 }

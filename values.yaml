@@ -1,0 +1,19 @@
+# Agent Core Deployment Configuration
+# Change these values to deploy different versions (v4, v5, v6, etc.)
+
+version: v4
+projectName: ekspoc-v4
+
+# AWS Configuration
+awsRegion: us-east-1
+eksClusterName: dev
+networkMode: PUBLIC
+
+# Capability Toggles
+capabilities:
+  memory: true
+  browser: true
+  codeInterpreter: true
+
+# Kubernetes Configuration
+namespace: agent-core-infra

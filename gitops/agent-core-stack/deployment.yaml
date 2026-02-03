@@ -1,54 +1,54 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: strands-agent-v4
-  namespace: agent-core-infra
+  name: strands-agent-{{ .Values.version }}
+  namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "1"
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: strands-agent-v4
+      app: strands-agent-{{ .Values.version }}
   template:
     metadata:
       labels:
-        app: strands-agent-v4
+        app: strands-agent-{{ .Values.version }}
     spec:
-      serviceAccountName: strands-agent-sa-v4
+      serviceAccountName: strands-agent-sa-{{ .Values.projectName }}
       containers:
       - name: strands-agent
         image: 940019131157.dkr.ecr.us-east-1.amazonaws.com/strands-agent:latest
         imagePullPolicy: Always
         env:
         - name: AWS_REGION
-          value: "us-east-1"
+          value: "{{ .Values.awsRegion }}"
         - name: BROWSER_ID
           valueFrom:
             secretKeyRef:
-              name: agent-core-outputs-v4
+              name: agent-core-outputs-{{ .Values.version }}
               key: browser_id
               optional: true
         - name: CODE_INTERPRETER_ID
           valueFrom:
             secretKeyRef:
-              name: agent-core-outputs-v4
+              name: agent-core-outputs-{{ .Values.version }}
               key: code_interpreter_id
               optional: true
         - name: MEMORY_ID
           valueFrom:
             secretKeyRef:
-              name: agent-core-outputs-v4
+              name: agent-core-outputs-{{ .Values.version }}
               key: memory_id
               optional: true
         - name: RESULTS_BUCKET
           valueFrom:
             secretKeyRef:
-              name: agent-core-outputs-v4
+              name: agent-core-outputs-{{ .Values.version }}
               key: results_bucket_name
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: strands-agent-sa-v4
-  namespace: agent-core-infra
+  name: strands-agent-sa-{{ .Values.projectName }}
+  namespace: {{ .Values.namespace }}

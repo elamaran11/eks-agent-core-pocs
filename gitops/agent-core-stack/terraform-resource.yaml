@@ -6,8 +6,8 @@ metadata:
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: GitRepository
 metadata:
-  name: agent-core-terraform-v4
-  namespace: agent-core-infra
+  name: agent-core-terraform-{{ .Values.version }}
+  namespace: {{ .Values.namespace }}
 spec:
   interval: 1m
   url: https://github.com/elamaran11/eks-agent-core-pocs
@@ -17,8 +17,8 @@ spec:
 apiVersion: infra.contrib.fluxcd.io/v1alpha2
 kind: Terraform
 metadata:
-  name: agent-core-components-v4
-  namespace: agent-core-infra
+  name: agent-core-components-{{ .Values.version }}
+  namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "0"
 spec:
@@ -26,23 +26,23 @@ spec:
   path: ./terraform/agent-core-components
   sourceRef:
     kind: GitRepository
-    name: agent-core-terraform-v4
+    name: agent-core-terraform-{{ .Values.version }}
   vars:
     - name: aws_region
-      value: us-east-1
+      value: {{ .Values.awsRegion }}
     - name: project_name
-      value: ekspoc-v4
+      value: {{ .Values.projectName }}
     - name: eks_cluster_name
-      value: dev
+      value: {{ .Values.eksClusterName }}
     - name: network_mode
-      value: PUBLIC
+      value: {{ .Values.networkMode }}
     - name: enable_memory
-      value: true
+      value: {{ .Values.capabilities.memory }}
     - name: enable_browser
-      value: true
+      value: {{ .Values.capabilities.browser }}
     - name: enable_code_interpreter
-      value: true
+      value: {{ .Values.capabilities.codeInterpreter }}
   writeOutputsToSecret:
-    name: agent-core-outputs-v4
+    name: agent-core-outputs-{{ .Values.version }}
   destroyResourcesOnDeletion: true
   approvePlan: auto

@@ -1,7 +1,7 @@
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
-  name: agent-core-v4-stack
+  name: agent-core-stack
   namespace: argocd
 spec:
   project: default
@@ -9,7 +9,10 @@ spec:
   source:
     repoURL: https://github.com/elamaran11/eks-agent-core-pocs
     targetRevision: main
-    path: gitops/agent-core-v4-stack
+    path: gitops/agent-core-stack
+    helm:
+      valueFiles:
+      - ../../values.yaml
   
   destination:
     server: https://kubernetes.default.svc

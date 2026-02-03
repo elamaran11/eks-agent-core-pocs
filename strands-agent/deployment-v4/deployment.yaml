@@ -15,7 +15,7 @@ spec:
       labels:
         app: strands-agent-v4
     spec:
-      serviceAccountName: strands-agent-sa-v4
+      serviceAccountName: strands-agent-sa-ekspoc-v4
       containers:
       - name: strands-agent
         image: 940019131157.dkr.ecr.us-east-1.amazonaws.com/strands-agent:latest
@@ -50,5 +50,5 @@ spec:
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: strands-agent-sa-v4
+  name: strands-agent-sa-ekspoc-v4
   namespace: agent-core-infra

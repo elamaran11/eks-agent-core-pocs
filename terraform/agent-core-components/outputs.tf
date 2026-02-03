@@ -32,3 +32,13 @@ output "results_bucket_name" {
   description = "S3 bucket name for results"
   value       = aws_s3_bucket.results.id
 }
+
+output "service_account_name" {
+  description = "ServiceAccount name for Pod Identity"
+  value       = "strands-agent-sa-${replace(var.project_name, "ekspoc-", "")}"
+}
+
+output "namespace" {
+  description = "Kubernetes namespace"
+  value       = "agent-core-infra"
+}

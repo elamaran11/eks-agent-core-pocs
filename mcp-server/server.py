@@ -1,12 +1,11 @@
 """
 MCP Server exposing Agent Core capabilities as MCP Tools
-Exposes the same 6 tools from the original Strands agent
 """
 import os
 import json
-import asyncio
 from typing import Dict, Any
-from fastmcp import FastMCP
+from fastapi import FastAPI
+from pydantic import BaseModel
 from contextlib import suppress
 
 from bedrock_agentcore.tools.browser_client import BrowserClient
@@ -17,8 +16,7 @@ from langchain_aws import ChatBedrockConverse
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 from bedrock_agentcore.memory import MemoryClient
 
-# Initialize MCP server
-mcp = FastMCP("Agent Core Tools")
+app = FastAPI(title="Agent Core Tools")
 
 # Get capability IDs from environment
 MEMORY_ID = os.environ.get("MEMORY_ID")
@@ -27,8 +25,24 @@ CODE_INTERPRETER_ID = os.environ.get("CODE_INTERPRETER_ID")
 AWS_REGION = os.environ.get("AWS_REGION", "us-west-2")
 
 
+class WeatherRequest(BaseModel):
+    city: str
+
+class CodeRequest(BaseModel):
+    weather_data: str
+
+class ExecuteRequest(BaseModel):
+    python_code: str
+
+class PreferencesRequest(BaseModel):
+    preferences: str
+
+class PlanRequest(BaseModel):
+    city: str
+    plan: str
+
+
 async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
-    """Run a browser automation task"""
     agent = BrowserAgent(task=task, llm=bedrock_chat, browser=browser_session)
     result = await agent.run()
     
@@ -39,7 +53,6 @@ async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
 
 
 async def initialize_browser_session():
-    """Initialize Browser session with AgentCore"""
     client = BrowserClient(AWS_REGION)
     client.start(identifier=BROWSER_ID)
     
@@ -57,18 +70,16 @@ async def initialize_browser_session():
     return browser_session, bedrock_chat, client
 
 
-@mcp.tool()
-async def get_weather_data(city: str) -> Dict[str, Any]:
-    """Get weather data for a city using browser automation"""
+@app.post("/tools/get_weather_data")
+async def get_weather_data(req: WeatherRequest):
     browser_session = None
-    
     try:
         browser_session, bedrock_chat, browser_client = await initialize_browser_session()
         
-        task = f"""Extract 8-Day Weather Forecast for {city} from weather.gov
+        task = f"""Extract 8-Day Weather Forecast for {req.city} from weather.gov
         Steps:
         - Go to https://weather.gov
-        - Search for "{city}" and click GO
+        - Search for "{req.city}" and click GO
         - Click "Printable Forecast" link
         - Extract date, high, low, conditions, wind, precip for each day
         - Return JSON array of daily forecasts
@@ -79,10 +90,10 @@ async def get_weather_data(city: str) -> Dict[str, Any]:
         if browser_client:
             browser_client.stop()
 
-        return {"status": "success", "content": [{"text": result}]}
+        return {"success": True, "result": result}
         
     except Exception as e:
-        return {"status": "error", "content": [{"text": f"Error: {str(e)}"}]}
+        return {"success": False, "error": str(e)}
         
     finally:
         if browser_session:
@@ -90,13 +101,9 @@ async def get_weather_data(city: str) -> Dict[str, Any]:
                 await browser_session.close()
 
 
-@mcp.tool()
-def generate_analysis_code(weather_data: str) -> Dict[str, Any]:
-    """Generate Python code for weather classification"""
+@app.post("/tools/generate_analysis_code")
+async def generate_analysis_code(req: CodeRequest):
     try:
-        # Use Claude to generate classification code
-        from langchain_aws import ChatBedrockConverse
-        
         llm = ChatBedrockConverse(
             model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
             region_name=AWS_REGION
@@ -104,32 +111,30 @@ def generate_analysis_code(weather_data: str) -> Dict[str, Any]:
         
         query = f"""Create Python code to classify weather days as GOOD/OK/POOR:
         Rules: GOOD: 65-80°F clear, OK: 55-85°F partly cloudy, POOR: <55°F or >85°F
-        Weather data: {weather_data}
+        Weather data: {req.weather_data}
         Return code that outputs list of tuples: [('2025-09-16', 'GOOD'), ...]"""
         
         result = llm.invoke(query)
         python_code = result.content
         
-        # Extract code from markdown
         import re
         pattern = r'```(?:json|python)\n(.*?)\n```'
         match = re.search(pattern, python_code, re.DOTALL)
         python_code = match.group(1).strip() if match else python_code
         
-        return {"status": "success", "content": [{"text": python_code}]}
+        return {"success": True, "result": python_code}
     except Exception as e:
-        return {"status": "error", "content": [{"text": f"Error: {str(e)}"}]}
+        return {"success": False, "error": str(e)}
 
 
-@mcp.tool()
-def execute_code(python_code: str) -> Dict[str, Any]:
-    """Execute Python code using AgentCore Code Interpreter"""
+@app.post("/tools/execute_code")
+async def execute_code(req: ExecuteRequest):
     try:
         code_client = CodeInterpreter(AWS_REGION)
         code_client.start(identifier=CODE_INTERPRETER_ID)
 
         response = code_client.invoke("executeCode", {
-            "code": python_code,
+            "code": req.python_code,
             "language": "python",
             "clearContext": True
         })
@@ -139,32 +144,30 @@ def execute_code(python_code: str) -> Dict[str, Any]:
         
         analysis_results = json.loads(code_execute_result)
 
-        return {"status": "success", "content": [{"text": str(analysis_results)}]}
+        return {"success": True, "result": str(analysis_results)}
 
     except Exception as e:
-        return {"status": "error", "content": [{"text": f"Error: {str(e)}"}]}
+        return {"success": False, "error": str(e)}
 
 
-@mcp.tool()
-def store_user_preferences(preferences: str) -> Dict[str, Any]:
-    """Store user activity preferences in memory"""
+@app.post("/tools/store_user_preferences")
+async def store_user_preferences(req: PreferencesRequest):
     try:
         client = MemoryClient(region_name=AWS_REGION)
         client.save_turn(
             memory_id=MEMORY_ID,
             actor_id="user123",
             session_id="session456",
-            user_input=f"My preferences: {preferences}",
+            user_input=f"My preferences: {req.preferences}",
             agent_response="Preferences saved"
         )
-        return {"status": "success", "content": [{"text": f"Preferences stored: {preferences}"}]}
+        return {"success": True, "result": f"Preferences stored: {req.preferences}"}
     except Exception as e:
-        return {"status": "error", "content": [{"text": f"Error storing preferences: {str(e)}"}]}
+        return {"success": False, "error": str(e)}
 
 
-@mcp.tool()
-def get_activity_preferences() -> Dict[str, Any]:
-    """Get user activity preferences from memory"""
+@app.post("/tools/get_activity_preferences")
+async def get_activity_preferences():
     try:
         client = MemoryClient(region_name=AWS_REGION)
         response = client.retrieve_memories(
@@ -175,29 +178,94 @@ def get_activity_preferences() -> Dict[str, Any]:
         
         if response and len(response) > 0:
             preferences = "\n".join([str(item) for item in response])
-            return {"status": "success", "content": [{"text": f"User preferences: {preferences}"}]}
+            return {"success": True, "result": f"User preferences: {preferences}"}
         else:
-            return {"status": "success", "content": [{"text": "No preferences stored. Default: outdoor activities, hiking, beaches, museums."}]}
+            return {"success": True, "result": "No preferences stored. Default: outdoor activities, hiking, beaches, museums."}
     except Exception as e:
-        return {"status": "error", "content": [{"text": f"Error retrieving preferences: {str(e)}"}]}
+        return {"success": False, "error": str(e)}
 
 
-@mcp.tool()
-def store_activity_plan(city: str, plan: str) -> Dict[str, Any]:
-    """Store the activity plan in memory for future reference"""
+@app.post("/tools/store_activity_plan")
+async def store_activity_plan(req: PlanRequest):
     try:
         client = MemoryClient(region_name=AWS_REGION)
         client.save_turn(
             memory_id=MEMORY_ID,
             actor_id="user123",
             session_id="session456",
-            user_input=f"Plan for {city}",
-            agent_response=plan
+            user_input=f"Plan for {req.city}",
+            agent_response=req.plan
         )
-        return {"status": "success", "content": [{"text": f"Activity plan stored in memory for {city}"}]}
+        return {"success": True, "result": f"Activity plan stored in memory for {req.city}"}
     except Exception as e:
-        return {"status": "error", "content": [{"text": f"Error storing plan: {str(e)}"}]}
+        return {"success": False, "error": str(e)}
+
+
+@app.get("/health")
+async def health():
+    return {"status": "healthy"}
+
+
+@app.post("/mcp")
+async def mcp_endpoint(request: dict):
+    """Handle MCP protocol requests"""
+    method = request.get("method")
+    
+    if method == "initialize":
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "result": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {"tools": {}},
+                "serverInfo": {"name": "agent-core-tools", "version": "1.0.0"}
+            }
+        }
+    
+    elif method == "tools/list":
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "result": {
+                "tools": [
+                    {"name": "get_weather_data", "description": "Get weather data for a city using browser automation", "inputSchema": {"type": "object", "properties": {"city": {"type": "string"}}, "required": ["city"]}},
+                    {"name": "generate_analysis_code", "description": "Generate Python code for weather classification", "inputSchema": {"type": "object", "properties": {"weather_data": {"type": "string"}}, "required": ["weather_data"]}},
+                    {"name": "execute_code", "description": "Execute Python code using Agent Core Code Interpreter", "inputSchema": {"type": "object", "properties": {"python_code": {"type": "string"}}, "required": ["python_code"]}},
+                    {"name": "store_user_preferences", "description": "Store user activity preferences in memory", "inputSchema": {"type": "object", "properties": {"preferences": {"type": "string"}}, "required": ["preferences"]}},
+                    {"name": "get_activity_preferences", "description": "Get user activity preferences from memory", "inputSchema": {"type": "object", "properties": {}}},
+                    {"name": "store_activity_plan", "description": "Store the activity plan in memory", "inputSchema": {"type": "object", "properties": {"city": {"type": "string"}, "plan": {"type": "string"}}, "required": ["city", "plan"]}}
+                ]
+            }
+        }
+    
+    elif method == "tools/call":
+        tool_name = request.get("params", {}).get("name")
+        arguments = request.get("params", {}).get("arguments", {})
+        
+        if tool_name == "get_weather_data":
+            result = await get_weather_data(WeatherRequest(**arguments))
+        elif tool_name == "generate_analysis_code":
+            result = await generate_analysis_code(CodeRequest(**arguments))
+        elif tool_name == "execute_code":
+            result = await execute_code(ExecuteRequest(**arguments))
+        elif tool_name == "store_user_preferences":
+            result = await store_user_preferences(PreferencesRequest(**arguments))
+        elif tool_name == "get_activity_preferences":
+            result = await get_activity_preferences()
+        elif tool_name == "store_activity_plan":
+            result = await store_activity_plan(PlanRequest(**arguments))
+        else:
+            return {"jsonrpc": "2.0", "id": request.get("id"), "error": {"code": -32601, "message": f"Tool not found: {tool_name}"}}
+        
+        return {
+            "jsonrpc": "2.0",
+            "id": request.get("id"),
+            "result": {"content": [{"type": "text", "text": str(result)}]}
+        }
+    
+    return {"jsonrpc": "2.0", "id": request.get("id"), "error": {"code": -32601, "message": f"Method not found: {method}"}}
 
 
 if __name__ == "__main__":
-    mcp.run()
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8080)

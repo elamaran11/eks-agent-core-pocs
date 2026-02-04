@@ -28,7 +28,7 @@ image:
 mcpServer:
   image:
     repository: 940019131157.dkr.ecr.us-west-2.amazonaws.com/agent-core-mcp
-    tag: v1.0.1
+    tag: v1.0.2
     pullPolicy: Always
 
 # KAgent Configuration

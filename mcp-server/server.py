@@ -15,10 +15,10 @@ from browser_use.browser import BrowserProfile
 from langchain_aws import ChatBedrockConverse
 from bedrock_agentcore.tools.code_interpreter_client import CodeInterpreter
 from bedrock_agentcore.memory import MemoryClient
+import boto3
 
 app = FastAPI(title="Agent Core Tools")
 
-# Get capability IDs from environment
 MEMORY_ID = os.environ.get("MEMORY_ID")
 BROWSER_ID = os.environ.get("BROWSER_ID")
 CODE_INTERPRETER_ID = os.environ.get("CODE_INTERPRETER_ID")
@@ -46,10 +46,11 @@ async def run_browser_task(browser_session, bedrock_chat, task: str) -> str:
     agent = BrowserAgent(task=task, llm=bedrock_chat, browser=browser_session)
     result = await agent.run()
     
+    # Use same result handling as Strands agent
     if 'done' in result.last_action() and 'text' in result.last_action()['done']:
         return result.last_action()['done']['text']
     else:
-        raise ValueError("NO Data")
+        return str(result) if result else "No data returned"
 
 
 async def initialize_browser_session():
@@ -62,6 +63,7 @@ async def initialize_browser_session():
     
     await browser_session.start()
     
+    # Use same approach as working Strands agent
     bedrock_chat = ChatBedrockConverse(
         model_id="us.anthropic.claude-3-7-sonnet-20250219-v1:0",
         region_name=AWS_REGION
@@ -115,7 +117,21 @@ async def generate_analysis_code(req: CodeRequest):
         Return code that outputs list of tuples: [('2025-09-16', 'GOOD'), ...]"""
         
         result = llm.invoke(query)
-        python_code = result.content
+        
+        if hasattr(result, 'content'):
+            if isinstance(result.content, list):
+                if len(result.content) > 0:
+                    first_part = result.content[0]
+                    if isinstance(first_part, dict):
+                        python_code = first_part.get('text', str(first_part))
+                    else:
+                        python_code = str(first_part)
+                else:
+                    python_code = ""
+            else:
+                python_code = str(result.content)
+        else:
+            python_code = str(result)
         
         import re
         pattern = r'```(?:json|python)\n(.*?)\n```'
@@ -172,8 +188,8 @@ async def get_activity_preferences():
         client = MemoryClient(region_name=AWS_REGION)
         response = client.retrieve_memories(
             memory_id=MEMORY_ID,
-            query="What are the user's activity preferences and interests?",
-            max_results=5
+            namespace="user-preferences",
+            query="What are the user's activity preferences and interests?"
         )
         
         if response and len(response) > 0:
@@ -208,7 +224,6 @@ async def health():
 
 @app.post("/mcp")
 async def mcp_endpoint(request: dict):
-    """Handle MCP protocol requests"""
     method = request.get("method")
     
     if method == "initialize":

@@ -159,7 +159,7 @@ resource "aws_iam_role_policy" "strands_agent_policy" {
 
 resource "aws_eks_pod_identity_association" "strands_agent" {
   cluster_name    = var.eks_cluster_name
-  namespace       = "agent-core-infra"
+  namespace       = var.namespace
   service_account = "strands-agent-sa-${var.project_name}"
   role_arn        = aws_iam_role.strands_agent_role.arn
 }
@@ -167,7 +167,7 @@ resource "aws_eks_pod_identity_association" "strands_agent" {
 # Pod Identity Association for MCP Server
 resource "aws_eks_pod_identity_association" "mcp_server" {
   cluster_name    = var.eks_cluster_name
-  namespace       = "agent-core-infra"
+  namespace       = var.namespace
   service_account = "${var.project_name}-mcp-sa"
   role_arn        = aws_iam_role.strands_agent_role.arn
 }
@@ -175,7 +175,7 @@ resource "aws_eks_pod_identity_association" "mcp_server" {
 # Pod Identity Association for KAgent Agent
 resource "aws_eks_pod_identity_association" "kagent_agent" {
   cluster_name    = var.eks_cluster_name
-  namespace       = "agent-core-infra"
+  namespace       = var.namespace
   service_account = "${var.project_name}-agent-sa"
   role_arn        = aws_iam_role.strands_agent_role.arn
 }

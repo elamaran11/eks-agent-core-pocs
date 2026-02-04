@@ -21,8 +21,8 @@ namespace: agent-core-infra
 # MCP Server Configuration
 mcpServer:
   image:
-    repository: 940019131157.dkr.ecr.us-west-2.amazonaws.com/agent-core-mcp
-    tag: v1.1.0
+    repository: 940019131157.dkr.ecr.us-east-1.amazonaws.com/agent-core-mcp
+    tag: v6-kagent
     pullPolicy: Always
 
 # KAgent Configuration

@@ -1,4 +1,12 @@
 {{- if .Values.kagent.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ .Values.projectName }}-agent-sa
+  namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "3"
+---
 apiVersion: kagent.dev/v1alpha2
 kind: Agent
 metadata:
@@ -9,6 +17,7 @@ metadata:
 spec:
   type: Declarative
   description: "Weather-Based Activity Planning Assistant with memory"
+  serviceAccountName: {{ .Values.projectName }}-agent-sa
   
   declarative:
     modelConfig: bedrock-anthropic-claude-3-5-sonnet

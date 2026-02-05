@@ -72,33 +72,105 @@ This guide provides step-by-step instructions to implement **Agent Gateway** for
 
 ## Step 1: Install Agent Gateway
 
-### 1.1 Add Helm Repository
+### Option A: GitOps Approach with ArgoCD (Recommended)
 
-```bash
-helm repo add agentgateway https://agentgateway.dev/charts
-helm repo update
+This approach follows the same pattern as the CNOE stacks and integrates with your existing GitOps workflow.
+
+#### 1.1 Create ArgoCD Application Manifest
+
+Create `argocd/agent-gateway-application.yaml`:
+
+```yaml
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agent-gateway
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: https://agentgateway.dev/charts
+    chart: agentgateway
+    targetRevision: 0.11.0
+    helm:
+      releaseName: agent-gateway
+      values: |
+        # Observability configuration
+        observability:
+          enabled: true
+          opentelemetry:
+            enabled: true
+            endpoint: http://jaeger-collector.observability.svc.cluster.local:4317
+            protocol: grpc
+          prometheus:
+            enabled: true
+            port: 9090
+            path: /metrics
+        
+        # Security configuration
+        security:
+          jwt:
+            enabled: true
+          mcp:
+            enabled: true
+        
+        # Service configuration
+        service:
+          type: ClusterIP
+          port: 8080
+          metricsPort: 9090
+        
+        # Resource limits
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        
+        # Replicas for HA
+        replicaCount: 2
+        
+        # Service Account
+        serviceAccount:
+          create: true
+          name: agent-gateway
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agent-gateway
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
 ```
 
-### 1.2 Create Namespace
+#### 1.2 Deploy via ArgoCD
 
 ```bash
-kubectl create namespace agent-gateway
+# Apply the ArgoCD Application
+kubectl apply -f argocd/agent-gateway-application.yaml
+
+# Monitor deployment
+kubectl get application agent-gateway -n argocd -w
+
+# Check sync status
+argocd app get agent-gateway
 ```
 
-### 1.3 Install Agent Gateway with Observability
-
-```bash
-helm install agent-gateway agentgateway/agentgateway \
-  --namespace agent-gateway \
-  --set observability.enabled=true \
-  --set observability.opentelemetry.enabled=true \
-  --set observability.prometheus.enabled=true \
-  --set observability.prometheus.port=9090 \
-  --set security.jwt.enabled=true \
-  --set security.mcp.enabled=true
-```
-
-### 1.4 Verify Installation
+#### 1.3 Verify Installation
 
 ```bash
 # Check pods
@@ -107,6 +179,7 @@ kubectl get pods -n agent-gateway
 # Expected output:
 # NAME                              READY   STATUS    RESTARTS   AGE
 # agent-gateway-xxxxxxxxxx-xxxxx    1/1     Running   0          30s
+# agent-gateway-xxxxxxxxxx-xxxxx    1/1     Running   0          30s
 
 # Check service
 kubectl get svc -n agent-gateway
@@ -114,6 +187,50 @@ kubectl get svc -n agent-gateway
 # Expected output:
 # NAME            TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)             AGE
 # agent-gateway   ClusterIP   10.100.x.x      <none>        8080/TCP,9090/TCP   30s
+```
+
+---
+
+### Option B: Direct Helm Installation
+
+If you prefer direct Helm installation without GitOps:
+
+#### 1.1 Add Helm Repository
+
+```bash
+helm repo add agentgateway https://agentgateway.dev/charts
+helm repo update
+```
+
+#### 1.2 Create Namespace
+
+```bash
+kubectl create namespace agent-gateway
+```
+
+#### 1.3 Install Agent Gateway
+
+```bash
+helm install agent-gateway agentgateway/agentgateway \
+  --namespace agent-gateway \
+  --set observability.enabled=true \
+  --set observability.opentelemetry.enabled=true \
+  --set observability.opentelemetry.endpoint=http://jaeger-collector.observability.svc.cluster.local:4317 \
+  --set observability.prometheus.enabled=true \
+  --set observability.prometheus.port=9090 \
+  --set security.jwt.enabled=true \
+  --set security.mcp.enabled=true \
+  --set replicaCount=2
+```
+
+#### 1.4 Verify Installation
+
+```bash
+# Check pods
+kubectl get pods -n agent-gateway
+
+# Check service
+kubectl get svc -n agent-gateway
 ```
 
 ---

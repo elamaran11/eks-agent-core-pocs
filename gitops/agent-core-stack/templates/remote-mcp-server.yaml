@@ -10,5 +10,6 @@ spec:
   description: "Agent Core capabilities: Memory, Browser, Code Interpreter"
   protocol: STREAMABLE_HTTP
   timeout: 30s
-  headers:
-    X-Agent-Identity: "system:serviceaccount:{{ .Values.namespace }}:{{ .Values.projectName }}-agent-sa"
+  headersFrom:
+    - name: X-Agent-Identity
+      value: "system:serviceaccount:{{ .Values.namespace }}:{{ .Values.projectName }}-agent-sa"

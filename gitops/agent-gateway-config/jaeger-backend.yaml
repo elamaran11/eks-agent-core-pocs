@@ -5,7 +5,5 @@ metadata:
   namespace: agentgateway-system
 spec:
   static:
-    services:
-      - name: jaeger
-        namespace: jaeger
-        port: 4317
+    host: jaeger.jaeger.svc.cluster.local
+    port: 4317

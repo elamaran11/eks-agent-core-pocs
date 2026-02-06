@@ -9,7 +9,7 @@ The applications are deployed in the following order using ArgoCD sync waves:
 1. **gateway-api-crds** (wave: -2) - Kubernetes Gateway API CRDs
 2. **agent-gateway-crds** (wave: -1) - Agent Gateway CRDs
 3. **agent-gateway** (wave: 0) - Agent Gateway control plane
-4. **agent-gateway-observability** (wave: 1) - OpenTelemetry tracing to Jaeger
+4. **agent-gateway-config** (wave: 1) - RBAC for JWT validation & OpenTelemetry tracing
 
 ## Quick Start
 
@@ -20,7 +20,7 @@ Deploy all Agent Gateway components:
 kubectl apply -f argocd/agent-gateway/01-gateway-api-crds.yaml
 kubectl apply -f argocd/agent-gateway/02-agent-gateway-crds.yaml
 kubectl apply -f argocd/agent-gateway/03-agent-gateway.yaml
-kubectl apply -f argocd/agent-gateway/04-agent-gateway-observability.yaml
+kubectl apply -f argocd/agent-gateway/04-agent-gateway-config.yaml
 ```
 
 Or deploy all at once (ArgoCD will handle ordering):
@@ -63,10 +63,13 @@ kubectl get crd | grep gateway
   - Requests: 500m CPU, 1Gi memory
   - Limits: 2000m CPU, 4Gi memory
 
-### 04-agent-gateway-observability.yaml
-- **Purpose**: Configures OpenTelemetry tracing to Jaeger
-- **Source**: gitops/agent-gateway-observability/
-- **Resources**: AgentgatewayBackend (Jaeger), AgentgatewayPolicy (tracing)
+### 04-agent-gateway-config.yaml
+- **Purpose**: Configures RBAC for JWT validation and OpenTelemetry tracing
+- **Source**: gitops/agent-gateway-config/
+- **Resources**: 
+  - ClusterRole & ClusterRoleBinding (JWT token validation)
+  - AgentgatewayBackend (Jaeger OTLP endpoint)
+  - AgentgatewayPolicy (tracing configuration)
 
 ## Configuration
 

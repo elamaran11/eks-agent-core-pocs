@@ -235,6 +235,206 @@ kubectl get svc -n agent-gateway
 
 ---
 
+## Understanding Authentication Flow
+
+### How Agent-to-Tool Communication is Secured
+
+**Authentication Flow:**
+
+```
+1. Agent Pod Starts
+   ↓
+   Kubernetes automatically mounts ServiceAccount JWT token at:
+   /var/run/secrets/kubernetes.io/serviceaccount/token
+   
+   Token contains:
+   - Issuer: https://kubernetes.default.svc
+   - Subject: system:serviceaccount:agent-core-infra:ekspoc-v6-kagent-agent-sa
+   - Audience: agent-gateway
+   - Expiration: 1 hour (auto-rotated)
+
+2. Agent Makes Tool Call
+   ↓
+   KAgent reads token and includes in request:
+   POST http://agent-gateway:8080/mcp
+   Authorization: Bearer <JWT-TOKEN>
+   Content-Type: application/json
+   {"method": "tools/call", "params": {"name": "get_weather_data"}}
+
+3. Agent Gateway Receives Request
+   ↓
+   Gateway extracts JWT from Authorization header
+
+4. JWT Validation (via Kubernetes TokenReview API)
+   ↓
+   Gateway calls Kubernetes API:
+   POST https://kubernetes.default.svc/apis/authentication.k8s.io/v1/tokenreviews
+   {
+     "spec": {
+       "token": "<JWT-TOKEN>",
+       "audiences": ["agent-gateway"]
+     }
+   }
+   
+   Kubernetes validates:
+   ✓ Signature is valid (signed by Kubernetes)
+   ✓ Token not expired
+   ✓ Issuer matches (kubernetes.default.svc)
+   ✓ Audience matches (agent-gateway)
+   
+   Returns:
+   {
+     "status": {
+       "authenticated": true,
+       "user": {
+         "username": "system:serviceaccount:agent-core-infra:ekspoc-v6-kagent-agent-sa",
+         "uid": "..."
+       }
+     }
+   }
+
+5. Extract Agent Identity
+   ↓
+   Gateway parses username:
+   - Namespace: agent-core-infra
+   - ServiceAccount: ekspoc-v6-kagent-agent-sa
+   
+   Adds to request headers:
+   x-agent-identity: system:serviceaccount:agent-core-infra:ekspoc-v6-kagent-agent-sa
+
+6. MCP Authorization Check
+   ↓
+   Gateway checks policy:
+   Can "ekspoc-v6-kagent-agent-sa" call "get_weather_data"?
+   
+   Policy rule:
+   - principal: "system:serviceaccount:agent-core-infra:ekspoc-v6-kagent-agent-sa"
+     allowedTools:
+       - get_weather_data ✓
+       - execute_code ✓
+   
+   Result: ALLOW
+
+7. Forward to MCP Server
+   ↓
+   Gateway forwards request to:
+   POST http://agent-core-mcp-service:8000/mcp
+   x-agent-identity: system:serviceaccount:agent-core-infra:ekspoc-v6-kagent-agent-sa
+   {"method": "tools/call", "params": {"name": "get_weather_data"}}
+
+8. MCP Server Executes Tool
+   ↓
+   Uses EKS Pod Identity for AWS credentials
+   Calls Bedrock Agent Core Browser capability
+   Returns result to Gateway
+
+9. Gateway Returns Response
+   ↓
+   Response flows back to agent with trace ID for observability
+```
+
+**Key Security Points:**
+
+1. **No Shared Secrets**: JWT tokens are cryptographically signed by Kubernetes, no API keys to manage
+2. **Short-Lived**: Tokens expire after 1 hour and are auto-rotated by Kubernetes
+3. **Scoped**: Token audience is limited to "agent-gateway" only
+4. **Identity-Based**: Each agent has unique ServiceAccount identity
+5. **Centralized Validation**: Gateway validates all tokens via Kubernetes API
+6. **Zero Trust**: Every request is authenticated, no implicit trust
+
+---
+
+### How Agent-to-Agent Communication is Secured
+
+**Authentication Flow (A2A Protocol):**
+
+```
+1. Planning Agent Wants to Call Weather Agent
+   ↓
+   Planning agent has ServiceAccount: planning-agent-sa
+   Token mounted at: /var/run/secrets/kubernetes.io/serviceaccount/token
+
+2. Planning Agent Makes A2A Call
+   ↓
+   POST http://agent-gateway:8080/agents/weather-agent-v6
+   Authorization: Bearer <PLANNING-AGENT-JWT>
+   Content-Type: application/json
+   {"task": "Get weather for Tampa, FL"}
+
+3. Agent Gateway Validates JWT
+   ↓
+   Calls Kubernetes TokenReview API
+   Validates token signature, expiration, audience
+   
+   Extracts identity:
+   - Source: system:serviceaccount:agent-core-infra:planning-agent-sa
+   - Target: weather-agent-v6
+
+4. A2A Authorization Check
+   ↓
+   Gateway checks policy:
+   Can "planning-agent-sa" call "weather-agent-v6"?
+   
+   Policy rule:
+   - source: "system:serviceaccount:agent-core-infra:planning-agent-sa"
+     target: weather-agent-v6
+     allowed: true ✓
+   
+   Result: ALLOW
+
+5. Forward to Weather Agent
+   ↓
+   Gateway forwards request to:
+   POST http://weather-agent-service:8080
+   x-source-agent: system:serviceaccount:agent-core-infra:planning-agent-sa
+   x-target-agent: weather-agent-v6
+   {"task": "Get weather for Tampa, FL"}
+
+6. Weather Agent Processes Request
+   ↓
+   Weather agent sees request came from planning-agent (via x-source-agent header)
+   Executes task using its own tools
+   Returns result to Gateway
+
+7. Gateway Returns Response
+   ↓
+   Response flows back to planning agent
+   Full trace captured in Jaeger
+```
+
+**Key Security Points:**
+
+1. **Mutual Authentication**: Both source and target agents are authenticated
+2. **Policy-Based**: Explicit allow rules required for agent-to-agent calls
+3. **Audit Trail**: All A2A calls logged with source and target identities
+4. **Prevent Lateral Movement**: Agents can only call explicitly allowed agents
+5. **No Direct Communication**: All A2A calls go through gateway (enforced by NetworkPolicies)
+
+---
+
+### Why This is Secure
+
+**Comparison with Traditional Approaches:**
+
+| Approach | Agent Gateway (JWT) | API Keys | mTLS Certificates |
+|----------|---------------------|----------|-------------------|
+| **Rotation** | Automatic (1 hour) | Manual | Manual |
+| **Revocation** | Delete ServiceAccount | Rotate all keys | Revoke cert |
+| **Scope** | Per-agent identity | Shared secret | Per-service |
+| **Management** | Kubernetes-native | External secrets | PKI infrastructure |
+| **Audit** | Full identity in logs | Key ID only | Cert CN |
+| **Zero Trust** | Yes | No | Yes |
+
+**Attack Scenarios Prevented:**
+
+1. **Stolen Token**: Token expires in 1 hour, limited to agent-gateway audience
+2. **Compromised Agent**: Can only call explicitly allowed tools/agents
+3. **Lateral Movement**: NetworkPolicies + Gateway policies prevent direct access
+4. **Replay Attacks**: Tokens have expiration and nonce
+5. **Privilege Escalation**: Each agent has minimal permissions via RBAC
+
+---
+
 ## Step 2: Configure RBAC for JWT Validation
 
 Agent Gateway needs permission to validate Kubernetes ServiceAccount tokens.

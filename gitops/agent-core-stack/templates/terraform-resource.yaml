@@ -35,6 +35,8 @@ spec:
       value: {{ .Values.projectName }}
     - name: eks_cluster_name
       value: {{ .Values.eksClusterName }}
+    - name: namespace
+      value: {{ .Values.namespace }}
     - name: network_mode
       value: {{ .Values.networkMode }}
     - name: enable_memory

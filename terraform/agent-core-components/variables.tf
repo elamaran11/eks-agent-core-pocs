@@ -21,6 +21,12 @@ variable "eks_cluster_name" {
   default     = "dev"
 }
 
+variable "namespace" {
+  description = "Kubernetes namespace for Pod Identity Association"
+  type        = string
+  default     = "agent-core-infra"
+}
+
 variable "enable_memory" {
   description = "Enable Agent Core Memory"
   type        = bool

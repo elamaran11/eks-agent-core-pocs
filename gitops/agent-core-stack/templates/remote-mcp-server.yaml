@@ -5,6 +5,7 @@ metadata:
   namespace: {{ .Values.namespace }}
   annotations:
     argocd.argoproj.io/sync-wave: "2"
+    argocd.argoproj.io/sync-options: SkipDryRunOnMissingResource=true
 spec:
   url: http://agent-gateway-proxy.agentgateway-system.svc.cluster.local:8080/mcp
   description: "Agent Core capabilities: Memory, Browser, Code Interpreter"

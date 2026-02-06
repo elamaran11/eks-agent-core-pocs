@@ -22,9 +22,3 @@ spec:
                 kind: AgentgatewayBackend
                 name: kubernetes-api
                 namespace: agentgateway-system
-      # Authorization - allow any ServiceAccount
-      authorization:
-        action: Allow
-        policy:
-          matchExpressions:
-            - 'jwt.sub.startsWith("system:serviceaccount:")'

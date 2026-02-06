@@ -6,7 +6,9 @@ metadata:
   annotations:
     argocd.argoproj.io/sync-wave: "2"
 spec:
-  url: http://agent-core-mcp-{{ .Values.version }}.{{ .Values.namespace }}.svc.cluster.local:8080/mcp
+  url: http://agent-gateway-proxy.agentgateway-system.svc.cluster.local:8080/mcp
   description: "Agent Core capabilities: Memory, Browser, Code Interpreter"
   protocol: STREAMABLE_HTTP
   timeout: 30s
+  headers:
+    X-Agent-Identity: "system:serviceaccount:{{ .Values.namespace }}:{{ .Values.projectName }}-agent-sa"

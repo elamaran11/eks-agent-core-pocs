@@ -12,8 +12,5 @@ spec:
   protocol: STREAMABLE_HTTP
   timeout: 30s
   headersFrom:
-    - name: Authorization
-      valueFrom:
-        type: Secret
-        name: {{ .Values.projectName }}-agent-sa-token
-        key: token
+    - name: X-Agent-Identity
+      value: "system:serviceaccount:{{ .Values.namespace }}:{{ .Values.projectName }}-agent-sa"

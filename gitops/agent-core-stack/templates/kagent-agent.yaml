@@ -54,5 +54,5 @@ spec:
           name: agent-core-tools-{{ .Values.version }}
           toolNames: []  # Empty = auto-discover all tools
           allowedHeaders:
-            - authorization
+            - X-Agent-Identity
 {{- end }}

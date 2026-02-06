@@ -7,7 +7,3 @@ resources:
   - gateway.yaml
   - jaeger-backend.yaml
   - tracing-policy.yaml
-  - kubernetes-api-backend.yaml
-  - kubernetes-ca-configmap.yaml
-  - kubernetes-api-tls-policy.yaml
-  - jwt-auth-policy.yaml

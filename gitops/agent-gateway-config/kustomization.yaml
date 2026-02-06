@@ -7,4 +7,3 @@ resources:
   - gateway.yaml
   - jaeger-backend.yaml
   - tracing-policy.yaml
-  - auth-policy.yaml

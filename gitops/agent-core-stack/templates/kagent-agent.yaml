@@ -53,6 +53,4 @@ spec:
           kind: RemoteMCPServer
           name: agent-core-tools-{{ .Values.version }}
           toolNames: []  # Empty = auto-discover all tools
-          allowedHeaders:
-            - authorization
 {{- end }}

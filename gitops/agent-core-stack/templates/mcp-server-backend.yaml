@@ -1,4 +1,4 @@
-apiVersion: agentgateway.kgateway.dev/v1alpha1
+apiVersion: agentgateway.dev/v1alpha1
 kind: AgentgatewayBackend
 metadata:
   name: mcp-server-backend

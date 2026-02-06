@@ -5,4 +5,22 @@ metadata:
   namespace: agentgateway-system
 data:
   ca.crt: |
-$(kubectl get configmap -n kube-system kube-root-ca.crt -o jsonpath='{.data.ca\.crt}' | sed 's/^/    /')
+    -----BEGIN CERTIFICATE-----
+    MIIDBTCCAe2gAwIBAgIIapgtWDNnlkQwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE
+    AxMKa3ViZXJuZXRlczAeFw0yNDEwMjEyMDAwMDJaFw0zNDEwMTkyMDA1MDJaMBUx
+    EzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK
+    AoIBAQC2+7/OzfCH85JXJXFl1rlqa8EfVd3CgmMRP650AaLK55YiIG+Hw8ghqkL2
+    vwCHrc4iSsghrsSiA7xkl8J0jg/O1KW7dcrKMSY+0POlpc3vWI26Fr3heNbISq4G
+    FTddNiLfHRUj+g1D0Rc0+Stcxsgm9zD8mucRL67ckZirviWX6cSlVx4koIBa6Ztq
+    dZBHRtNjhHL5+jkuH9Zehin0Y+tHalyy1ajQnHGo+/LYDyo/cxYTGe8tkw9gvSD+
+    bI1sVG6wurSjFg+XABZeEX1soGuBcPwZihpuX1/kKVRhJ+U1Xdv2tiXXTCVMSzrZ
+    QGCMNcaQaFHOUrylrNH2cNHGtIanAgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP
+    BgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBTEr3vgMwNX5RP7g7m1hkR+9x4SbjAV
+    BgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQCT/ry6Cskz
+    7tlGFmidfbXocaBQhFaxk0v+HiepD1UGwODru5OC4HYg0Mmeu0UsB1Y+UYpi7IRm
+    IHfL4RlgtzfaF2GbomL8sffJH/ZCOGzH+hazB+4Bx79iisdRbjudkb4J9cbkpS9P
+    7qwtlA2PgbJGLS1XG0Ob6y4+RtxuhMctluKNxbKLFsrytJWiKc3Ks46yAtH4PKUl
+    r3+wH11iM1Y1IXrRbhRv3eqg9JU6UtQURnixn2ehYn8Z157Q7TJth7XnYF6gNiWf
+    3lNGrcKwAzFq/7/ln6UM5upEKB7BXpr4pmYVh7dLA2LhQ5nQePC6YsyvCbLcwM4w
+    arpu7v6ANB1w
+    -----END CERTIFICATE-----

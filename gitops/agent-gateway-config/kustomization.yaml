@@ -4,7 +4,6 @@ kind: Kustomization
 resources:
   - rbac-clusterrole.yaml
   - rbac-clusterrolebinding.yaml
-  - gatewayclass.yaml
   - gateway.yaml
   - jaeger-backend.yaml
   - tracing-policy.yaml

@@ -4,7 +4,8 @@ metadata:
   name: jaeger-otlp
   namespace: agentgateway-system
 spec:
-  services:
-    - name: jaeger
-      namespace: jaeger
-      port: 4317
+  static:
+    services:
+      - name: jaeger
+        namespace: jaeger
+        port: 4317

@@ -1,0 +1,25 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: jwt-auth-policy
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: agent-gateway-proxy
+  jwt:
+    providers:
+      - name: kubernetes
+        issuer: "https://kubernetes.default.svc.cluster.local"
+        audiences:
+          - "https://kubernetes.default.svc"
+        remoteJwks:
+          uri: "https://kubernetes.default.svc.cluster.local/openid/v1/jwks"
+    rules:
+      - match:
+          path:
+            type: PathPrefix
+            value: /
+        requires:
+          provider: kubernetes

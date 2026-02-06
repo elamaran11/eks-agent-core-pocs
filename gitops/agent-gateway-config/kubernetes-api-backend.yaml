@@ -1,0 +1,9 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: kubernetes-api
+  namespace: agentgateway-system
+spec:
+  static:
+    host: kubernetes.default.svc.cluster.local
+    port: 443

@@ -1,0 +1,30 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: jwt-auth-policy
+  namespace: agentgateway-system
+spec:
+  targetRefs:
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: agent-gateway-proxy
+  traffic:
+    jwtAuthentication:
+      mode: Strict
+      providers:
+        - issuer: "https://kubernetes.default.svc.cluster.local"
+          jwks:
+            remote:
+              jwksPath: "/openid/v1/jwks"
+              cacheDuration: "5m"
+              backendRef:
+                group: agentgateway.dev
+                kind: AgentgatewayBackend
+                name: kubernetes-api
+                namespace: agentgateway-system
+      # Authorization - allow any ServiceAccount
+      authorization:
+        action: Allow
+        policy:
+          matchExpressions:
+            - 'jwt.sub.startsWith("system:serviceaccount:")'

@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kubernetes-ca-cert
+  namespace: agentgateway-system
+data:
+  ca.crt: |
+$(kubectl get configmap -n kube-system kube-root-ca.crt -o jsonpath='{.data.ca\.crt}' | sed 's/^/    /')

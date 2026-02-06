@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: agent-gateway
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+  source:
+    repoURL: ghcr.io/kgateway-dev/charts
+    chart: agentgateway
+    targetRevision: v2.2.0-main
+    helm:
+      releaseName: agent-gateway
+      values: |
+        # Observability configuration
+        observability:
+          enabled: true
+          opentelemetry:
+            enabled: true
+            endpoint: http://jaeger.jaeger.svc.cluster.local:4317
+            protocol: grpc
+          prometheus:
+            enabled: true
+            port: 9090
+            path: /metrics
+        
+        # Security configuration
+        security:
+          jwt:
+            enabled: true
+          mcp:
+            enabled: true
+        
+        # Service configuration
+        service:
+          type: ClusterIP
+          port: 8080
+          metricsPort: 9090
+        
+        # Resource limits
+        resources:
+          limits:
+            cpu: 2000m
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+        
+        # Replicas for HA
+        replicaCount: 2
+        
+        # Service Account
+        serviceAccount:
+          create: true
+          name: agent-gateway
+  
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: agentgateway-system
+  
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m

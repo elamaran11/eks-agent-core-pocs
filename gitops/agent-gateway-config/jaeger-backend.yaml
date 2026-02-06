@@ -1,0 +1,10 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: jaeger-otlp
+  namespace: agentgateway-system
+spec:
+  services:
+    - name: jaeger
+      namespace: jaeger
+      port: 4317

@@ -3,6 +3,8 @@ kind: AgentgatewayBackend
 metadata:
   name: mcp-server-backend
   namespace: {{ .Values.namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
 spec:
   static:
     host: mcp-server-service.{{ .Values.namespace }}.svc.cluster.local

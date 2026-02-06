@@ -5,6 +5,5 @@ metadata:
   namespace: {{ .Values.namespace }}
 spec:
   static:
-    hosts:
-      - host: mcp-server-service.{{ .Values.namespace }}.svc.cluster.local
-        port: 8000
+    host: mcp-server-service.{{ .Values.namespace }}.svc.cluster.local
+    port: 8000

@@ -1,0 +1,143 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openwebui
+  namespace: agent-core-infra
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openwebui
+  template:
+    metadata:
+      labels:
+        app: openwebui
+    spec:
+      containers:
+      - name: openwebui
+        image: ghcr.io/open-webui/open-webui:main
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        # API Configuration
+        - name: OPENAI_API_BASE_URL
+          value: "http://strands-agent-v5.agent-core-infra.svc.cluster.local:8000/v1"
+        - name: OPENAI_API_KEY
+          value: "sk-dummy-key"
+        
+        # Auth Configuration
+        - name: WEBUI_AUTH
+          value: "True"
+        - name: WEBUI_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: openwebui-secret
+              key: secret-key
+        
+        # Keycloak OIDC Configuration
+        - name: ENABLE_OAUTH_SIGNUP
+          value: "true"
+        - name: OAUTH_MERGE_ACCOUNTS_BY_EMAIL
+          value: "true"
+        - name: OAUTH_PROVIDER_NAME
+          value: "Keycloak"
+        - name: OPENID_PROVIDER_URL
+          value: "http://a02ef2e102bc44a17a9e97d060c0d518-184868708.us-west-2.elb.amazonaws.com:8080/realms/master/.well-known/openid-configuration"
+        - name: OAUTH_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-client-secret
+              key: client-id
+        - name: OAUTH_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-client-secret
+              key: client-secret
+        - name: OAUTH_SCOPES
+          value: "openid email profile"
+        
+        # Disable local signup - force OAuth
+        - name: ENABLE_SIGNUP
+          value: "false"
+        
+        # Forward user info headers to backend
+        - name: ENABLE_FORWARD_USER_INFO_HEADERS
+          value: "true"
+        
+        # Enable OAuth ID token cookie (for Pipe functions to access)
+        - name: ENABLE_OAUTH_ID_TOKEN_COOKIE
+          value: "true"
+        
+        # Default role for new OAuth users (user, pending, or admin)
+        - name: DEFAULT_USER_ROLE
+          value: "admin"
+        
+        # OAuth Role Management - sync roles from Keycloak
+        - name: ENABLE_OAUTH_ROLE_MANAGEMENT
+          value: "true"
+        - name: OAUTH_ROLES_CLAIM
+          value: "realm_access.roles"
+        - name: OAUTH_ADMIN_ROLES
+          value: "admin"
+  
+        volumeMounts:
+        - name: data
+          mountPath: /app/backend/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 5
+      volumes:
+      - name: data
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openwebui
+  namespace: agent-core-infra
+spec:
+  selector:
+    app: openwebui
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  type: ClusterIP  # Change to ClusterIP if using Ingress
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: openwebui-secret
+  namespace: agent-core-infra
+type: Opaque
+stringData:
+  secret-key: "agentic-ai-on-eks-2026"  # Generate a secure random key
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: keycloak-client-secret
+  namespace: agent-core-infra
+type: Opaque
+stringData:
+  client-id: "openwebui"
+  client-secret: "7ojGTWEpTAfcYVYyV7eUvXP5jfoENRfo"

@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: agent-core-infra
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: strands-agent-sa-eks-agent-poc-v5
+  namespace: agent-core-infra
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::ACCOUNT_ID:role/strands-agent-sa-role"  # Update with your IAM role
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: strands-agent-v5
+  namespace: agent-core-infra
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: strands-agent-v5
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: strands-agent-v5
+    spec:
+      containers:
+      - env:
+        - name: AWS_REGION
+          value: us-west-2
+        - name: BROWSER_ID
+          valueFrom:
+            secretKeyRef:
+              key: browser_id
+              name: agent-core-outputs-v5
+              optional: true
+        - name: CODE_INTERPRETER_ID
+          valueFrom:
+            secretKeyRef:
+              key: code_interpreter_id
+              name: agent-core-outputs-v5
+              optional: true
+        - name: MEMORY_ID
+          valueFrom:
+            secretKeyRef:
+              key: memory_id
+              name: agent-core-outputs-v5
+              optional: true
+        - name: RESULTS_BUCKET
+          valueFrom:
+            secretKeyRef:
+              key: results_bucket_name
+              name: agent-core-outputs-v5
+        - name: AGENT_GATEWAY_URL
+          value: http://agentgateway-proxy.agentgateway-system.svc.cluster.local:8080
+        - name: PORT
+          value: "8000"
+        - name: LANGFUSE_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              key: public-key
+              name: langfuse-credentials
+              optional: true
+        - name: LANGFUSE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              key: secret-key
+              name: langfuse-credentials
+              optional: true
+        - name: LANGFUSE_HOST
+          value: http://langfuse-web.langfuse.svc.cluster.local:3000
+        image: 257960400895.dkr.ecr.us-west-2.amazonaws.com/strands-agent:latest
+        imagePullPolicy: Always
+        name: strands-agent
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: strands-agent-sa-eks-agent-poc-v5
+      serviceAccountName: strands-agent-sa-eks-agent-poc-v5
+      terminationGracePeriodSeconds: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: strands-agent-v5
+  namespace: agent-core-infra
+spec:
+  selector:
+    app: strands-agent-api
+  ports:
+  - port: 8000
+    targetPort: 8000
+    protocol: TCP
+    name: http
+  type: ClusterIP

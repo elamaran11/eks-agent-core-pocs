@@ -1,0 +1,50 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: mcp-server-authn
+spec:
+  # Target the MCP backend to apply this authentication policy
+  targetRefs:
+  - group: agentgateway.dev
+    kind: AgentgatewayBackend
+    name: mcp-servers-backend
+  # Configure MCP authentication
+  backend:
+    mcp:
+      authentication:
+        # Issuer URL - must match the 'iss' claim in JWT tokens
+        issuer: "http://a02ef2e102bc44a17a9e97d060c0d518-184868708.us-west-2.elb.amazonaws.com:8080/realms/master"
+        # JWKS configuration for token validation
+        jwks:
+          # Reference to the Keycloak service for fetching public keys
+          backendRef:
+            name: keycloak
+            kind: Service
+            namespace: keycloak
+            port: 8080
+          # Path to the JWKS endpoint on the issuer
+          jwksPath: "/realms/master/protocol/openid-connect/certs"
+        # Expected audience in JWT tokens
+        audiences:
+        - http://localhost:8080/mcp
+        - mcp-client
+        # Validation mode: Strict requires all claims to be valid
+        mode: Strict 
+        # Identity provider type
+        provider: Keycloak  
+        # MCP resource metadata for OAuth discovery
+        resourceMetadata:
+          # Resource identifier for this MCP server
+          resource: http://localhost:8081/sse
+          authorizationServers:
+          - "http://a02ef2e102bc44a17a9e97d060c0d518-184868708.us-west-2.elb.amazonaws.com:8080/realms/master"
+          # Scopes supported by this MCP server
+          scopesSupported:
+          - email
+          - openid
+          - profile
+          # Methods for providing bearer tokens
+          bearerMethodsSupported:
+          - header
+          - body
+          - query

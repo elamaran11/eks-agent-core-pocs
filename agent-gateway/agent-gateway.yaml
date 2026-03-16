@@ -1,0 +1,58 @@
+# AgentgatewayBackend with multiplexed MCP servers
+# All MCP servers are combined into one backend - tools are prefixed with target name
+# e.g., code_execute_code, browser_get_weather_data, memory_store_user_preferences
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayBackend
+metadata:
+  name: mcp-servers-backend
+  namespace: agent-core-infra
+spec:
+  mcp:
+    targets:
+    - name: code
+      static:
+        host: execute-code-mcp-v1.agent-core-infra.svc.cluster.local
+        port: 8080
+        protocol: SSE
+    - name: browser
+      static:
+        host: browser-mcp-v1.agent-core-infra.svc.cluster.local
+        port: 8080
+        protocol: SSE
+    - name: memory
+      static:
+        host: memory-mcp-v1.agent-core-infra.svc.cluster.local
+        port: 8080
+        protocol: SSE
+---
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: mcp-servers-route
+  namespace: agent-core-infra
+spec:
+  parentRefs:
+  - name: agentgateway-proxy
+    namespace: agentgateway-system
+  rules:
+  - backendRefs:
+    - name: mcp-servers-backend
+      group: agentgateway.dev
+      kind: AgentgatewayBackend
+  matches:
+    # Main MCP endpoint to connect to the MCP server
+    - path:
+        type: PathPrefix
+        value: /sse
+    # Path to access resouce server metadata
+    - path:
+        type: PathPrefix
+        value: /.well-known/oauth-protected-resource/mcp
+    # Path to access authorization server metadata
+    - path:
+        type: PathPrefix
+        value: /.well-known/oauth-authorization-server/mcp
+    # JWKS endpoint for token validation
+    - path:
+        type: PathPrefix
+        value: /realms/master/protocol/openid-connect/certs

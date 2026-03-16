@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: browser-mcp-v1
+  namespace: agent-core-infra
+  labels:
+    app: browser-mcp-v1
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: browser-mcp-v1
+  template:
+    metadata:
+      labels:
+        app: browser-mcp-v1
+        mcp-server: "true"
+    spec:
+      serviceAccountName: strands-agent-sa-eks-agent-poc-v5
+      containers:
+      - name: mcp-server
+        image: 257960400895.dkr.ecr.us-west-2.amazonaws.com/agent-core-mcp:browser-latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: BROWSER_ID
+          valueFrom:
+            secretKeyRef:
+              key: browser_id
+              name: agent-core-outputs-v5
+              optional: true
+        - name: AWS_REGION
+          value: "us-west-2"
+        # Langfuse observability
+        - name: LANGFUSE_PUBLIC_KEY
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-credentials
+              key: public-key
+              optional: true
+        - name: LANGFUSE_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: langfuse-credentials
+              key: secret-key
+              optional: true
+        - name: LANGFUSE_HOST
+          value: "http://langfuse-web.langfuse.svc.cluster.local:3000"
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: browser-mcp-v1
+  namespace: agent-core-infra
+  labels:
+    app: browser-mcp-v1
+    mcp-server: "true"
+spec:
+  selector:
+    app: browser-mcp-v1
+  ports:
+  - port: 8080
+    targetPort: 8080
+    protocol: TCP
+    name: http
+  type: ClusterIP

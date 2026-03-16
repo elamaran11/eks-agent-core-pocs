@@ -1,0 +1,40 @@
+apiVersion: agentgateway.dev/v1alpha1
+kind: AgentgatewayPolicy
+metadata:
+  name: jwt-auth-policy
+  namespace: agentgateway-system
+spec:
+  # Target the Gateway to apply JWT authentication to all routes
+  targetRefs:
+  - group: gateway.networking.k8s.io
+    kind: Gateway
+    name: agentgateway-proxy   
+  # Configure JWT authentication and authorization
+  traffic:
+    jwtAuthentication:
+      # Validation mode - determines how strictly JWTs are validated
+      mode: Strict   
+      # List of JWT providers (identity providers)
+      providers:
+      - # Issuer URL - must match the 'iss' claim in JWT tokens
+        issuer: "http://a02ef2e102bc44a17a9e97d060c0d518-184868708.us-west-2.elb.amazonaws.com:8080/realms/master"
+        # JWKS configuration for remote key fetching
+        jwks:
+          remote:
+            # Path to the JWKS endpoint, relative to the backend root
+            jwksPath: "/realms/master/protocol/openid-connect/certs"
+            # Cache duration for JWKS keys (reduces load on identity provider)
+            cacheDuration: "5m"
+            # Reference to the Keycloak service
+            backendRef:
+              group: ""
+              kind: Service
+              name: keycloak
+              namespace: keycloak
+              port: 8080
+    # Authorization - only allow users in admin-group
+    authorization:
+      action: Allow
+      policy:
+        matchExpressions:
+        - 'jwt.groups.exists(g, g == "admin-group")'

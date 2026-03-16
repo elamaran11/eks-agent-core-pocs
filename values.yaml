@@ -1,12 +1,12 @@
 # Agent Core Deployment Configuration
 # Change these values to deploy different versions (v4, v5, v6, etc.)
 
-version: v5
-projectName: ekspoc-v5
+version: v6-kagent
+projectName: eks-agent-poc-v6
 
 # AWS Configuration
-awsRegion: us-east-1
-eksClusterName: dev
+awsRegion: us-west-2
+eksClusterName: eks-nfm-demo
 networkMode: PUBLIC
 
 # Capability Toggles
@@ -18,8 +18,19 @@ capabilities:
 # Kubernetes Configuration
 namespace: agent-core-infra
 
-# Agent Image Configuration
+# Agent Image Configuration (for Strands BYO)
 image:
-  repository: 940019131157.dkr.ecr.us-east-1.amazonaws.com/strands-agent
+  repository: 257960400895.dkr.ecr.us-west-2.amazonaws.com/strands-agent
   tag: latest
   pullPolicy: Always
+
+# MCP Server Configuration
+mcpServer:
+  image:
+    repository: 257960400895.dkr.ecr.us-west-2.amazonaws.com/agent-core-mcp
+    tag: latest
+    pullPolicy: Always
+
+# KAgent Configuration
+kagent:
+  enabled: true
